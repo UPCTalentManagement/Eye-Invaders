@@ -771,6 +771,45 @@ updateHealthDisplay();
     init(); // Call initialization function to set everything up
     console.log("Initialization complete. Waiting for player interaction.");
 
-}); // End of DOMContentLoaded
+}); 
+
+
+document.addEventListener('keydown', function (event) {
+    // F12
+    if (event.key === "F12") {
+        event.preventDefault();
+    }
+
+    // Ctrl + Shift + I (Inspect)
+    if (event.ctrlKey && event.shiftKey && event.key === 'I') {
+        event.preventDefault();
+    }
+
+    // Ctrl + Shift + J (Console)
+    if (event.ctrlKey && event.shiftKey && event.key === 'J') {
+        event.preventDefault();
+    }
+
+    // Ctrl + U (View Source)
+    if (event.ctrlKey && event.key === 'u') {
+        event.preventDefault();
+    }
+
+    // Ctrl + S (Save page)
+    if (event.ctrlKey && event.key === 's') {
+        event.preventDefault();
+    }
+
+    // Ctrl + C (Copy)
+    if (event.ctrlKey && event.key === 'c') {
+        event.preventDefault();
+    }
+
+    // Ctrl + P (Print)
+    if (event.ctrlKey && event.key === 'p') {
+        event.preventDefault();
+    }
+});
+// End of DOMContentLoaded
 // 
 // 
