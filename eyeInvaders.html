@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Eye Drops Invaders - Enhanced</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            height: 100%;
+            max-height: 900px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #4682B4 70%, #2c5282 100%);
+            border: 5px solid #1e90ff;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Start Screen */
+        #start-screen h1 {
+            font-size: 2.5rem;
+            color: #0056b3;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        #start-screen .subtitle {
+            font-size: 1.1rem;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .difficulty-selection {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .difficulty-btn {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .difficulty-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .difficulty-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .how-to-play {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            max-width: 500px;
+        }
+
+        .how-to-play h2 {
+            color: #0056b3;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .how-to-play ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .how-to-play li {
+            padding: 8px 0;
+            color: #333;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .how-to-play li::before {
+            content: '💧';
+            font-size: 1.2rem;
+        }
+
+        /* Game Screen */
+        #game-screen {
+            background: none;
+            backdrop-filter: none;
+            justify-content: flex-start;
+            padding: 0;
+        }
+
+        #hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        #score, #timer {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        #health-container {
+            width: 150px;
+            height: 25px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        #health-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%);
+            transition: width 0.3s ease, background 0.3s ease;
+            box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.3);
+        }
+
+        #health-bar.low {
+            background: linear-gradient(90deg, #f44336 0%, #ff5722 100%);
+            animation: healthPulse 0.5s infinite;
+        }
+
+        @keyframes healthPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        #game-area {
+            width: 100%;
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Enhanced Player */
+        #player {
+            width: 45px;
+            height: 65px;
+            background: linear-gradient(to bottom, #ffffff 0%, #e3f2fd 50%, #90caf9 100%);
+            border-radius: 45% 45% 20px 20px;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            transition: left 0.1s linear;
+            border: 2px solid #1976d2;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3), inset 0 -2px 5px rgba(33, 150, 243, 0.3);
+        }
+
+        #player::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(to bottom, #64b5f6, #42a5f5);
+            border-radius: 4px 4px 0 0;
+            border: 2px solid #1976d2;
+            border-bottom: none;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #player::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 35px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Enhanced Enemies */
+        .enemy {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            border-radius: 50%;
+            font-size: 9px;
+            color: white;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 2px black;
+            z-index: 4;
+            animation: enemyFloat 2s ease-in-out infinite;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+        }
+
+        @keyframes enemyFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+        }
+
+        .enemy.red-eyes { 
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        .enemy.allergic-conjunctivitis { 
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        }
+        .enemy.dry-eye { 
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        }
+        .enemy.sore-eye { 
+            background: linear-gradient(135deg, #fd7e14 0%, #dc6502 100%);
+        }
+        .enemy.glaucoma { 
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+        }
+
+        /* Enhanced Shots */
+        .shot {
+            width: 10px;
+            height: 18px;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 3;
+            box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+            animation: shotGlow 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes shotGlow {
+            from { opacity: 0.8; }
+            to { opacity: 1; }
+        }
+
+        .shot.lubricant { background-color: #ADD8E6; box-shadow: 0 0 15px #ADD8E6; }
+        .shot.antihistaminic { background-color: #FFD700; box-shadow: 0 0 15px #FFD700; }
+        .shot.decongestant { background-color: #FFA07A; box-shadow: 0 0 15px #FFA07A; }
+        .shot.cs { background-color: #F08080; box-shadow: 0 0 15px #F08080; }
+        .shot.ts { background-color: #9370DB; box-shadow: 0 0 15px #9370DB; }
+
+        /* Controls */
+        #controls {
+            width: 100%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
+            padding: 15px 0;
+            z-index: 10;
+        }
+
+        #shot-selection {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            gap: 5px;
+            padding: 0 10px;
+        }
+
+        .shot-btn {
+            padding: 10px 12px;
+            font-size: 0.75rem;
+            margin: 0;
+            min-width: 70px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .shot-btn.selected {
+            border: 2px solid #fff;
+            box-shadow: 0 0 20px currentColor;
+            transform: scale(1.1);
+        }
+
+        .shot-btn[data-shot-type="lubricant"] { background-color: #ADD8E6; color: #333; }
+        .shot-btn[data-shot-type="antihistaminic"] { background-color: #FFD700; color: #333; }
+        .shot-btn[data-shot-type="decongestant"] { background-color: #FFA07A; color: #333; }
+        .shot-btn[data-shot-type="cs"] { background-color: #F08080; color: #333; }
+        .shot-btn[data-shot-type="ts"] { background-color: #9370DB; color: white; }
+
+        #mobile-controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        #mobile-controls button {
+            font-size: 1.8rem;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            min-width: 70px;
+        }
+
+        #mobile-controls button:active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Explosion Effect */
+        .explosion {
+            animation: explode 0.5s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes explode {
+            0% { 
+                transform: scale(1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: scale(3); 
+                opacity: 0; 
+            }
+        }
+
+        /* Particle Effect */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-fall 1s ease-out forwards;
+        }
+
+        @keyframes particle-fall {
+            0% { 
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% { 
+                transform: translateY(100px) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Combo Display */
+        #combo-display {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        #combo-display.show {
+            opacity: 1;
+            animation: comboPopup 0.5s ease;
+        }
+
+        @keyframes comboPopup {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.2); }
+        }
+
+        /* Feedback Messages */
+        .feedback-message {
+            position: absolute;
+            font-size: 1.5rem;
+            font-weight: bold;
+            z-index: 15;
+            pointer-events: none;
+            animation: feedbackFloat 1s ease-out forwards;
+        }
+
+        .feedback-message.correct {
+            color: #4CAF50;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .feedback-message.wrong {
+            color: #f44336;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes feedbackFloat {
+            0% { 
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% { 
+                transform: translateY(-50px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* End Screen */
+        #end-screen {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+            color: white;
+        }
+
+        #end-screen h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats-container {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 1.1rem;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: normal;
+        }
+
+        .stat-value {
+            font-weight: bold;
+        }
+
+        #badge-container {
+            margin: 20px 0;
+        }
+
+        #badge-image {
+            width: 350px;
+            height: 350px;
+            margin: 15px auto;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+        }
+
+        #badge-name {
+            font-size: 1.9rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #play-again-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+        }
+
+        #play-again-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            #start-screen h1 {
+                font-size: 2rem;
+            }
+
+            .difficulty-btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+
+            #hud {
+                font-size: 0.9rem;
+                padding: 10px 15px;
+            }
+
+            #player {
+                width: 40px;
+                height: 55px;
+            }
+
+            .enemy {
+                width: 45px;
+                height: 45px;
+                font-size: 8px;
+            }
+
+            .shot-btn {
+                padding: 8px 10px;
+                font-size: 0.7rem;
+                min-width: 60px;
+            }
+
+            #mobile-controls button {
+                font-size: 1.5rem;
+                padding: 12px 20px;
+            }
+        }
+
+        /* Sound Toggle Button */
+        #sound-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        #sound-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <button id="sound-toggle" title="Toggle Sound">🔊</button>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <h1>💧 Eye Drops Invaders</h1>
+            <p class="subtitle">Match symptoms with the right treatment!</p>
+            
+            <p style="font-size: 1.1rem; color: #0056b3; font-weight: bold; margin: 15px 0;">Select Difficulty:</p>
+            <div class="difficulty-selection">
+                <button class="difficulty-btn" data-difficulty="easy">🟢 Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium">🟡 Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard">🔴 Hard</button>
+            </div>
+            
+            <div class="how-to-play">
+                <h2>📖 How to Play</h2>
+                <ul>
+                    <li>Move the eye drops bottle left/right</li>
+                    <li>Select the correct eye drop for each symptom</li>
+                    <li>Shoot to eliminate symptoms</li>
+                    <li>Build combos for bonus points!</li>
+                    <li>Survive for 3 minutes</li>
+                    <li>Don't let symptoms reach the eye!</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div id="hud">
+                <div id="score">Score: 0</div>
+                <div id="health-container">
+                    <div id="health-bar"></div>
+                </div>
+                <div id="timer">Time: 03:00</div>
+            </div>
+            
+            <div id="combo-display">COMBO x0</div>
+            
+            <div id="game-area">
+                <div id="player"></div>
+            </div>
+            
+            <div id="controls">
+                <div id="shot-selection">
+                    <button class="shot-btn" data-shot-type="lubricant">SYSTAN</button>
+                    <button class="shot-btn" data-shot-type="antihistaminic">PATANOL</button>
+                    <button class="shot-btn" data-shot-type="decongestant">RIAZOLIN</button>
+                    <button class="shot-btn" data-shot-type="cs">CROMA</button>
+                    <button class="shot-btn" data-shot-type="ts">APIMOL</button>
+                </div>
+                <div id="mobile-controls">
+                    <button id="move-left">←</button>
+                    <button id="shoot-btn">💧</button>
+                    <button id="move-right">→</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="screen">
+            <h1>🎮 Game Over!</h1>
+            
+            <div class="stats-container">
+                <div class="stat-row">
+                    <span class="stat-label">Final Score:</span>
+                    <span class="stat-value" id="final-score">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Correct Shots:</span>
+                    <span class="stat-value" id="correct-answers">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Wrong Shots:</span>
+                    <span class="stat-value" id="wrong-answers">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Accuracy:</span>
+                    <span class="stat-value" id="accuracy">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Max Combo:</span>
+                    <span class="stat-value" id="max-combo">0</span>
+                </div>
+            </div>
+            
+            <div id="badge-container">
+                <div id="badge-name">Badge</div>
+                <div id="badge-image">🏆</div>
+            </div>
+            
+            <button id="play-again-btn">🔄 Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const endScreen = document.getElementById('end-screen');
+            const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+            const scoreDisplay = document.getElementById('score');
+            const timerDisplay = document.getElementById('timer');
+            const gameArea = document.getElementById('game-area');
+            const playerElement = document.getElementById('player');
+            const shotSelectionButtons = document.querySelectorAll('.shot-btn');
+            const moveLeftButton = document.getElementById('move-left');
+            const moveRightButton = document.getElementById('move-right');
+            const shootButton = document.getElementById('shoot-btn');
+            const playAgainButton = document.getElementById('play-again-btn');
+            const comboDisplay = document.getElementById('combo-display');
+            const soundToggle = document.getElementById('sound-toggle');
+
+            // Game State
+            let score = 0;
+            let timeLeft = 180;
+            let gameInterval = null;
+            let timerInterval = null;
+            let enemySpawnInterval = null;
+            let isGameOver = false;
+            let playerX = 50;
+            let shots = [];
+            let enemies = [];
+            let selectedShotType = 'lubricant';
+            let correctAnswers = 0;
+            let wrongAnswers = 0;
+            let difficulty = 'medium';
+            let maxHealth = 100;
+            let currentHealth = maxHealth;
+            let isMovingLeft = false;
+            let isMovingRight = false;
+            let combo = 0;
+            let maxCombo = 0;
+            let soundEnabled = true;
+
+            // Configuration
+            const playerSpeed = 2.5;
+            const shotSpeed = 9;
+            const enemySpeed = { easy: 0.6, medium: 1.2, hard: 1.8 };
+            const enemySpawnRate = { easy: 6000, medium: 4000, hard: 2500 };
+            const pointsCorrect = 100;
+            const pointsWrong = -30;
+            const comboMultiplier = 1.5;
+            const healthPenalty = 15;
+
+            const enemyTypes = [
+                { type: 'dry-eye', label: 'Dry eye', correctShot: 'lubricant' },
+                { type: 'allergic-conjunctivitis', label: 'Conjunctivitis', correctShot: 'antihistaminic' },
+                { type: 'sore-eye', label: 'Sore eye', correctShot: 'decongestant' },
+                { type: 'red-eyes', label: 'Rhinitis', correctShot: 'cs' },
+                { type: 'glaucoma', label: 'Glaucoma', correctShot: 'ts' }
+            ];
+
+            // Sound System (Basic beeps using Web Audio API)
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            function playSound(frequency, duration, type = 'sine') {
+                if (!soundEnabled) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            }
+
+            soundToggle.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+                playSound(440, 0.1);
+            });
+
+            // Initialization
+            function init() {
+                difficultyButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        difficulty = button.getAttribute('data-difficulty');
+                        playSound(523, 0.1);
+                        startGame();
+                    });
+                });
+
+                shotSelectionButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        selectedShotType = button.getAttribute('data-shot-type');
+                        updateSelectedShotButton();
+                        playSound(330, 0.05);
+                    });
+                });
+                updateSelectedShotButton();
+
+                // Movement Controls
+                moveLeftButton.addEventListener('mousedown', () => startMoving('left'));
+                moveLeftButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startMoving('left');
+                });
+                moveLeftButton.addEventListener('mouseup', () => stopMoving('left'));
+                moveLeftButton.addEventListener('mouseleave', () => stopMoving('left'));
+                moveLeftButton.addEventListener('touchend', () => stopMoving('left'));
+
+                moveRightButton.addEventListener('mousedown', () => startMoving('right'));
+                moveRightButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startMoving('right');
+                });
+                moveRightButton.addEventListener('mouseup', () => stopMoving('right'));
+                moveRightButton.addEventListener('mouseleave', () => stopMoving('right'));
+                moveRightButton.addEventListener('touchend', () => stopMoving('right'));
+
+                shootButton.addEventListener('click', shoot);
+                document.addEventListener('keydown', handleKeyDown);
+                playAgainButton.addEventListener('click', resetGame);
+
+                showScreen('start');
+            }
+
+            function startMoving(direction) {
+                if (isGameOver) return;
+                if (direction === 'left') isMovingLeft = true;
+                if (direction === 'right') isMovingRight = true;
+            }
+
+            function stopMoving(direction) {
+                if (direction === 'left') isMovingLeft = false;
+                if (direction === 'right') isMovingRight = false;
+            }
+
+            // Screen Management
+            function showScreen(screenId) {
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+                const targetScreen = document.getElementById(`${screenId}-screen`);
+                if (targetScreen) {
+                    targetScreen.classList.add('active');
+                }
+            }
+
+            // Game Start
+            function startGame() {
+                isGameOver = false;
+                score = 0;
+                timeLeft = 180;
+                correctAnswers = 0;
+                wrongAnswers = 0;
+                combo = 0;
+                maxCombo = 0;
+                shots = [];
+                enemies = [];
+                playerX = 50;
+                currentHealth = maxHealth;
+
+                while (gameArea.firstChild && gameArea.firstChild !== playerElement) {
+                    gameArea.removeChild(gameArea.firstChild);
+                }
+                if (playerElement.parentNode !== gameArea) {
+                    gameArea.appendChild(playerElement);
+                }
+
+                updatePlayerPosition();
+                updateScore();
+                updateTimerDisplay();
+                updateHealthDisplay();
+                updateComboDisplay();
+
+                showScreen('game');
+
+                clearInterval(gameInterval);
+                clearInterval(timerInterval);
+                clearInterval(enemySpawnInterval);
+
+                gameInterval = setInterval(gameLoop, 1000 / 60);
+                timerInterval = setInterval(updateTimer, 1000);
+                enemySpawnInterval = setInterval(spawnEnemy, enemySpawnRate[difficulty]);
+            }
+
+            // Game Loop
+            function gameLoop() {
+                if (isGameOver) return;
+
+                if (isMovingLeft) movePlayer('left');
+                if (isMovingRight) movePlayer('right');
+
+                moveShots();
+                moveEnemies();
+                checkCollisions();
+            }
+
+            // Timer
+            function updateTimer() {
+                if (isGameOver) return;
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 10 && timeLeft > 0) {
+                    playSound(800, 0.1);
+                }
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Score & Health
+            function updateScore() {
+                scoreDisplay.textContent = `Score: ${score}`;
+            }
+
+            function updateHealthDisplay() {
+                const healthBar = document.getElementById('health-bar');
+                if (healthBar) {
+                    const healthPercent = (currentHealth / maxHealth) * 100;
+                    healthBar.style.width = `${healthPercent}%`;
+                    
+                    if (healthPercent <= 30) {
+                        healthBar.classList.add('low');
+                    } else {
+                        healthBar.classList.remove('low');
+                    }
+                }
+            }
+
+            function updateComboDisplay() {
+                if (combo > 1) {
+                    comboDisplay.textContent = `COMBO x${combo}`;
+                    comboDisplay.classList.add('show');
+                } else {
+                    comboDisplay.classList.remove('show');
+                }
+            }
+
+            // Player Movement
+            function movePlayer(direction) {
+                if (isGameOver) return;
+
+                const gameW = gameArea.offsetWidth;
+                if (!gameW || gameW <= 0) return;
+                
+                const playerW = playerElement.offsetWidth;
+                const playerHalfWidthPercent = (playerW / gameW * 50);
+
+                if (direction === 'left') {
+                    playerX -= playerSpeed;
+                } else if (direction === 'right') {
+                    playerX += playerSpeed;
+                }
+
+                playerX = Math.max(playerHalfWidthPercent, Math.min(100 - playerHalfWidthPercent, playerX));
+                updatePlayerPosition();
+            }
+
+            function updatePlayerPosition() {
+                if (playerElement) {
+                    playerElement.style.left = `${playerX}%`;
+                }
+            }
+
+            // Shooting
+            function shoot() {
+                if (isGameOver) return;
+
+                playSound(440, 0.1, 'square');
+
+                const shot = document.createElement('div');
+                shot.classList.add('shot', selectedShotType);
+
+                const shotWidth = 10;
+                const shotHeight = 18;
+                const playerTopCenterX = playerElement.offsetLeft + playerElement.offsetWidth / 2;
+                const shotX = playerTopCenterX - shotWidth / 2;
+                const shotY = playerElement.offsetTop - shotHeight;
+
+                shot.style.left = `${shotX}px`;
+                shot.style.top = `${shotY}px`;
+                shot.style.width = `${shotWidth}px`;
+                shot.style.height = `${shotHeight}px`;
+
+                gameArea.appendChild(shot);
+                shots.push({ element: shot, type: selectedShotType, x: shotX, y: shotY });
+            }
+
+            function updateSelectedShotButton() {
+                shotSelectionButtons.forEach(btn => {
+                    if (btn.getAttribute('data-shot-type') === selectedShotType) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                });
+            }
+
+            // Enemy System
+            function spawnEnemy() {
+                if (isGameOver) return;
+
+                const randomEnemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+                const enemy = document.createElement('div');
+                enemy.classList.add('enemy', randomEnemyType.type);
+                enemy.textContent = randomEnemyType.label;
+
+                const enemyWidth = 50;
+                const gameW = gameArea.offsetWidth;
+                if (!gameW || gameW <= 0) return;
+
+                const spawnX = Math.random() * (gameW - enemyWidth);
+                const spawnY = -60;
+
+                enemy.style.left = `${spawnX}px`;
+                enemy.style.top = `${spawnY}px`;
+
+                gameArea.appendChild(enemy);
+                enemies.push({
+                    element: enemy,
+                    type: randomEnemyType.type,
+                    correctShot: randomEnemyType.correctShot,
+                    x: spawnX,
+                    y: spawnY
+                });
+            }
+
+            function moveEnemies() {
+                const currentEnemySpeed = enemySpeed[difficulty];
+                const gameH = gameArea.offsetHeight;
+
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const enemy = enemies[i];
+                    enemy.y += currentEnemySpeed;
+                    enemy.element.style.top = `${enemy.y}px`;
+
+                    if (gameH > 0 && enemy.y + enemy.element.offsetHeight > gameH) {
+                        currentHealth -= healthPenalty;
+                        currentHealth = Math.max(0, currentHealth);
+                        updateHealthDisplay();
+                        
+                        playSound(200, 0.2);
+                        combo = 0;
+                        updateComboDisplay();
+                        
+                        if (currentHealth <= 0) {
+                            endGame();
+                        }
+                        
+                        removeElement(enemy.element);
+                        enemies.splice(i, 1);
+                    }
+                }
+            }
+
+            function moveShots() {
+                for (let i = shots.length - 1; i >= 0; i--) {
+                    const shot = shots[i];
+                    shot.y -= shotSpeed;
+                    shot.element.style.top = `${shot.y}px`;
+
+                    if (shot.y < -shot.element.offsetHeight) {
+                        removeElement(shot.element);
+                        shots.splice(i, 1);
+                    }
+                }
+            }
+
+            // Collision Detection
+            function checkCollisions() {
+                for (let i = shots.length - 1; i >= 0; i--) {
+                    const shot = shots[i];
+                    let shotRemoved = false;
+
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        const enemy = enemies[j];
+
+                        if (isColliding(shot.element, enemy.element)) {
+                            handleCollision(shot, enemy);
+
+                            removeElement(enemy.element);
+                            enemies.splice(j, 1);
+
+                            if (!shotRemoved) {
+                                removeElement(shot.element);
+                                shots.splice(i, 1);
+                                shotRemoved = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            function isColliding(el1, el2) {
+                if (!el1 || !el2) return false;
+                const rect1 = el1.getBoundingClientRect();
+                const rect2 = el2.getBoundingClientRect();
+                return !(
+                    rect1.right < rect2.left ||
+                    rect1.left > rect2.right ||
+                    rect1.bottom < rect2.top ||
+                    rect1.top > rect2.bottom
+                );
+            }
+
+            function handleCollision(shot, enemy) {
+                const isCorrect = shot.type === enemy.correctShot;
+                const enemyRect = enemy.element.getBoundingClientRect();
+                const gameAreaRect = gameArea.getBoundingClientRect();
+                const explosionX = enemyRect.left - gameAreaRect.left + enemyRect.width / 2;
+                const explosionY = enemyRect.top - gameAreaRect.top + enemyRect.height / 2;
+
+                if (isCorrect) {
+                    combo++;
+                    if (combo > maxCombo) maxCombo = combo;
+                    
+                    const points = Math.floor(pointsCorrect * (1 + (combo - 1) * 0.2));
+                    score += points;
+                    correctAnswers++;
+                    
+                    playSound(523 + (combo * 50), 0.15, 'sine');
+                    createExplosion(explosionX, explosionY, '#4CAF50');
+                    createParticles(explosionX, explosionY, '#4CAF50');
+                    showFeedback(explosionX, explosionY, `+${points}`, true);
+                } else {
+                    combo = 0;
+                    score += pointsWrong;
+                    wrongAnswers++;
+                    
+                    playSound(200, 0.2, 'sawtooth');
+                    createExplosion(explosionX, explosionY, '#f44336');
+                    showFeedback(explosionX, explosionY, `${pointsWrong}`, false);
+                }
+
+                score = Math.max(0, score);
+                updateScore();
+                updateComboDisplay();
+            }
+
+            function createExplosion(x, y, color) {
+                const explosion = document.createElement('div');
+                explosion.style.position = 'absolute';
+                explosion.style.left = `${x - 20}px`;
+                explosion.style.top = `${y - 20}px`;
+                explosion.style.width = '40px';
+                explosion.style.height = '40px';
+                explosion.style.borderRadius = '50%';
+                explosion.style.backgroundColor = color;
+                explosion.style.opacity = '0.8';
+                explosion.style.zIndex = '6';
+                explosion.classList.add('explosion');
+                gameArea.appendChild(explosion);
+
+                setTimeout(() => removeElement(explosion), 500);
+            }
+
+            function createParticles(x, y, color) {
+                for (let i = 0; i < 8; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+                    particle.style.backgroundColor = color;
+                    particle.style.left = `${x}px`;
+                    particle.style.top = `${y}px`;
+                    
+                    const angle = (Math.PI * 2 * i) / 8;
+                    const velocity = 30;
+                    const vx = Math.cos(angle) * velocity;
+                    const vy = Math.sin(angle) * velocity;
+                    
+                    particle.style.setProperty('--vx', `${vx}px`);
+                    particle.style.setProperty('--vy', `${vy}px`);
+                    
+                    gameArea.appendChild(particle);
+                    setTimeout(() => removeElement(particle), 1000);
+                }
+            }
+
+            function showFeedback(x, y, text, isCorrect) {
+                const feedback = document.createElement('div');
+                feedback.classList.add('feedback-message', isCorrect ? 'correct' : 'wrong');
+                feedback.textContent = text;
+                feedback.style.left = `${x}px`;
+                feedback.style.top = `${y}px`;
+                gameArea.appendChild(feedback);
+
+                setTimeout(() => removeElement(feedback), 1000);
+            }
+
+            function removeElement(element) {
+                if (element && element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            }
+
+            // Input Handling
+            function handleKeyDown(e) {
+                if (isGameOver) return;
+                
+                switch (e.key) {
+                    case 'ArrowLeft':
+                    case 'a':
+                        movePlayer('left');
+                        e.preventDefault();
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                        movePlayer('right');
+                        e.preventDefault();
+                        break;
+                    case ' ':
+                    case 'Enter':
+                        shoot();
+                        e.preventDefault();
+                        break;
+                    case '1': selectShotByIndex(0); break;
+                    case '2': selectShotByIndex(1); break;
+                    case '3': selectShotByIndex(2); break;
+                    case '4': selectShotByIndex(3); break;
+                    case '5': selectShotByIndex(4); break;
+                }
+            }
+
+            function selectShotByIndex(index) {
+                if (isGameOver) return;
+                if (index >= 0 && index < shotSelectionButtons.length) {
+                    const button = shotSelectionButtons[index];
+                    selectedShotType = button.getAttribute('data-shot-type');
+                    updateSelectedShotButton();
+                    playSound(330, 0.05);
+                }
+            }
+
+            // Game End
+            function endGame() {
+                if (isGameOver) return;
+
+                isGameOver = true;
+                clearInterval(gameInterval);
+                clearInterval(timerInterval);
+                clearInterval(enemySpawnInterval);
+
+                playSound(300, 0.5);
+
+                const totalAnswers = correctAnswers + wrongAnswers;
+                const accuracy = totalAnswers > 0 ? (correctAnswers / totalAnswers) * 100 : 0;
+
+                let badgeName = '🥉 Novice';
+                let badgeEmoji = '🎖️';
+
+                if (score >= 3000 && accuracy >= 80) {
+                    badgeName = '🏆 Legend';
+                    badgeEmoji = '👑';
+                } else if (score >= 1500 && accuracy >= 70) {
+                    badgeName = '🥇 Hero';
+                    badgeEmoji = '⭐';
+                } else if (score >= 800 && accuracy >= 60) {
+                    badgeName = '🥈 Expert';
+                    badgeEmoji = '💎';
+                }
+
+                document.getElementById('final-score').textContent = score;
+                document.getElementById('correct-answers').textContent = correctAnswers;
+                document.getElementById('wrong-answers').textContent = wrongAnswers;
+                document.getElementById('accuracy').textContent = `${accuracy.toFixed(1)}%`;
+                document.getElementById('max-combo').textContent = maxCombo;
+                document.getElementById('badge-name').textContent = badgeName;
+                document.getElementById('badge-image').textContent = badgeEmoji;
+
+                showScreen('end');
+            }
+
+            // Reset Game
+            function resetGame() {
+                playSound(523, 0.1);
+                
+                enemies.forEach(e => removeElement(e.element));
+                shots.forEach(s => removeElement(s.element));
+                gameArea.querySelectorAll('.explosion, .particle, .feedback-message').forEach(el => removeElement(el));
+
+                enemies = [];
+                shots = [];
+                score = 0;
+                timeLeft = 180;
+                correctAnswers = 0;
+                wrongAnswers = 0;
+                combo = 0;
+                maxCombo = 0;
+                playerX = 50;
+                selectedShotType = 'lubricant';
+                currentHealth = maxHealth;
+                isGameOver = false;
+
+                showScreen('start');
+                updateSelectedShotButton();
+            }
+
+            // Initialize
+            init();
+        });
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+// Disable specific key combinations
+document.addEventListener('keydown', function (event) {
+    // F12
+    if (event.key === "F12") {
+        event.preventDefault();
+    }
+
+    // Ctrl + Shift + I (Inspect)
+    if (event.ctrlKey && event.shiftKey && event.key === 'I') {
+        event.preventDefault();
+    }
+
+    // Ctrl + Shift + J (Console)
+    if (event.ctrlKey && event.shiftKey && event.key === 'J') {
+        event.preventDefault();
+    }
+
+    // Ctrl + U (View Source)
+    if (event.ctrlKey && event.key === 'u') {
+        event.preventDefault();
+    }
+
+    // Ctrl + S (Save page)
+    if (event.ctrlKey && event.key === 's') {
+        event.preventDefault();
+    }
+
+    // Ctrl + C (Copy)
+    if (event.ctrlKey && event.key === 'c') {
+        event.preventDefault();
+    }
+
+    // Ctrl + P (Print)
+    if (event.ctrlKey && event.key === 'p') {
+        event.preventDefault();
+    }
+});
+    </script>
+</body>
+</html>
